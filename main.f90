@@ -1,236 +1,139 @@
-!program hello
-!    implicit none
-!
-!      INTEGER, parameter:: IO = 12 ! input-output unit
-!      INTEGER NX,NT,I,J,ID,m,ISCHEME
-!      REAL,ALLOCATABLE :: U(:),UN(:),X(:), U_interval(:)
-!      REAL L,h,VNM,dt,t,Time,time1,V1,in_time
-!      REAL C0, C1, a, in_val, delta_1
-!
-!      WRITE(*,*) 'Read input file'
-!      OPEN(IO,FILE='Input.txt')
-!      READ(IO,*) L
-!      READ(IO,*) NX
-!      READ(IO,*) Time
-!      READ(IO,*) VNM
-!      READ(IO,*) a
-!      READ(IO,*) C0, C1
-!      READ(IO,*) ISCHEME
-!      CLOSE(IO)
-!
-!      ALLOCATE(U(1:NX),UN(1:NX),X(1:NX), U_interval(1:NX))
-!
-!      h= L/(Nx-1)
-!      dt=(h**2)/(vnm*2)
-!      NT=Time/dt + 1
-!
-!
-!      WRITE(*,*) 'L=',L, 'h=', h, 'NX=', NX, 'a=', a
-!      WRITE(*,*) 'VNM=', VNM, 'dt=', dt, 'Time=', Time, 'NT=', NT
-!
-!      X(1)=0.0
-!      DO I=2, NX-1
-!       X(I)=X(I-1)+h
-!      END DO
-!      X(NX)=L
-!
-!      U(:)=0.0
-!      UN(:)=0.0
-!      U_interval(:)=0.0
-!
-!      in_val = 0.0
-!      time1 = 0.0
-!
-!
-!      CALL InitValue(U,NX, in_val)
-!
-!
-!      OPEN(IO,FILE='Res.dat')
-!      call Output(U,X,NX,time1)
-!!-------------------------  Solve equation ------------------
-!
-!    do
-!        time1 = time1 + dt
-!        if(time1 .gt. time) then
-!            exit
-!        end if
-!
-!        do i=2,NX-1
-!                U_interval(i)= U(i) + VNM*dt/(2*(h**2))*(U(i+1)-2*U(i)+U(i-1))
-!        end do
-!        call BoundValue(U_interval(1),U_interval(NX),C0,C1)
-!        call BoundValue(UN(1),UN(NX),C0,C1)
-!        UN(2) = VNM*dt/(12*h**2)*(-U_interval(4)+16*U_interval(3)-29*U_interval(2)+16*U_interval(1)-2)+U(2)
-!        UN(NX-1) = VNM*dt/(12*h**2)*(16*U_interval(NX)-31*U_interval(NX-1)+16*U_interval(NX-2)-U_interval(NX-3))+U(NX-1)
-!        do i=3,NX-2
-!        UN(i)= U(i) + VNM*dt/(12*h**2)*(16*U_interval(i+1)-U_interval(i+2)-30*U_interval(i)+16*U_interval(i-1)-U_interval(i-2))
-!        end do
-!        call Output(UN,X,NX,time1)
-!        U = UN
-!
-!
-!    end do
-!
-!
-!!---------------------------Output results
-!
-!      close(IO)
-!
-!      End program
-
-!!----------------------- Set Initial Value -----------------
-!      SUBROUTINE InitValue(U, NX, in_val)
-!      IMPLICIT NONE
-!      integer, intent(in):: NX
-!      real,intent(in)::in_val
-!       REAL,intent(in out):: U(NX)
-!       U = in_val
-!
-!      END SUBROUTINE
-!
-!!----------------------- Set Boundary Condition ------------
-!      SUBROUTINE BoundValue(a,b,C0,C1)
-!      IMPLICIT NONE
-!      real, intent(in)::C0,C1
-!      real, intent(in out):: a, b
-!      a = C1
-!      b = C0
-!
-!      END SUBROUTINE
-!
-!!-----------------------
-!      SUBROUTINE Output(U,X,NX,time)
-!      IMPLICIT NONE
-!      INTEGER, parameter:: IO=12
-!      integer,intent(in)::NX
-!      real,intent(in out)::time
-!      integer i
-!      REAL,intent(in out):: U(NX)
-!      REAL,intent(in out):: X(NX)
-!      do i=1,NX
-!        write(IO,*) U(i),X(i),time
-!      end do
-!
-!
-!
-!      END SUBROUTINE
-      program hello
-    implicit none
+      Program Pr
+      Implicit none
 
       INTEGER, parameter:: IO = 12 ! input-output unit
-      INTEGER NX,NT,I,J,ID,m,ISCHEME
-      REAL,ALLOCATABLE :: U(:),UN(:),X(:), U_interval(:)
-      REAL L,h,VNM,dt,t,Time,time1,V1,in_time
-      REAL C0, C1, a, in_val, delta_1
+      INTEGER NX,NT,I,J,ID,m, ISCHEME
+      REAL(8),ALLOCATABLE :: U(:),UN(:),X(:)
+      REAL(8):: X_theory(0:1000),theory(0:1000)
+      REAL(8) L,h,CFL,dt,t,Time,p
+      REAL(8) C, C0, C1, pi, k,G,FE
 
       WRITE(*,*) 'Read input file'
       OPEN(IO,FILE='Input.txt')
       READ(IO,*) L
-      READ(IO,*) NX
-      READ(IO,*) Time
-      READ(IO,*) VNM
-      READ(IO,*) a
+      READ(IO,*) m
+      READ(IO,*) C
       READ(IO,*) C0, C1
+      READ(IO,*) NX
+      READ(IO,*) NT
+      READ(IO,*) CFL
       READ(IO,*) ISCHEME
       CLOSE(IO)
 
-      ALLOCATE(U(1:NX),UN(1:NX),X(1:NX), U_interval(1:NX))
+      ALLOCATE(U(0:NX+1),UN(0:NX+1),X(0:NX+1))
 
-      h= L/(Nx-1)
-      !dt=(h**2)/(a*2)
-      dt=(h**2)/(a*6)
-      NT=Time/dt + 1
-      VNM = a*dt/(h**2) !изменила число неймана
+      pi=3.14159265359d0
+      k = m*pi/L
+      h = L/(NX-1)
+      dt = CFL*h/c
 
+      Time = dt*NT
 
-      WRITE(*,*) 'L=',L, 'h=', h, 'NX=', NX, 'a=', a
-      WRITE(*,*) 'VNM=', VNM, 'dt=', dt, 'Time=', Time, 'NT=', NT
+      WRITE(*,*) 'L=',L, 'h=', h, 'NX=', NX, 'k=',k, 'beta=',k*h
+      WRITE(*,*) 'CFL=', CFL, 'dt=', dt, 'Time=', Time, 'NT=', NT
 
-      X(1)=0.0
-      DO I=2, NX-1
+      X(0)=-h
+      DO I=1, NX+1
        X(I)=X(I-1)+h
+
       END DO
-      X(NX)=L
+      write(*,*) X
+
 
       U(:)=0.0
       UN(:)=0.0
-      U_interval(:)=0.0
 
-      in_val = 0.0
-      time1 = 0.0
+      t=0.0d0
+      CALL InitValue(X,U,NX,k)
+!    OPEN(1,FILE='Res1.dat')
+!        p = (X(NX+1)-X(0))/1000
+!        write(*,*)'p=',p
+!        X_theory(0) = X(0)
+!         DO I=1, 1000
+!            X_theory(I)= X_theory(I-1)+p
+!         END DO
+!
+!        theory(0) = sin(k*(x(0)-c*Time))
+!
+!        WRITE(1,*)THEORY(0),X(0)
+!        do I = 1, 1000
+!            THEORY(I) = sin(k*(X_theory(I)-c*Time))
+!            WRITE(1,*)THEORY(i),X_theory(I)
+!        end do
+!    CLOSE(1)
+!      CALL BoundValue()
+      OPEN(1,FILE='Res1.dat')
+        theory(0) = sin(k*(x(0)-c*Time))
+        WRITE(1,*)THEORY(0),X(0)
+        do I = 1, NX+1
+            THEORY(I) = sin(k*(x(I)-c*Time))
+            WRITE(1,*)THEORY(i),X(i)
+        end do
+      CLOSE(1)
 
 
-      CALL InitValue(U,NX, in_val)
+      OPEN(IO,FILE='Res.dat')
 
-
-      OPEN(IO,FILE='Res1.dat')
-      call Output(U,X,NX,time1)
+      call Output(U,X,NX,t)
 !-------------------------  Solve equation ------------------
-
     do
-        time1 = time1 + dt
-        if(time1 .gt. time) then
+        t = t + dt
+        if (t .gt. Time) then
             exit
         end if
-
-        do i=2,NX-1
-                U_interval(i)= U(i) + (VNM/2)*(U(i+1)-2*U(i)+U(i-1))
+        do I = 1,NX
+            UN(I) = U(I)-CFL*(U(I)-U(I-1))
         end do
-        call BoundValue(U_interval(1),U_interval(NX),C0,C1)
-        call BoundValue(UN(1),UN(NX),C0,C1)
-        UN(2) = (VNM/12)*(-U_interval(4)+16*U_interval(3)-29*U_interval(2)+16*U_interval(1)-2)+U(2)
-        UN(NX-1) = (VNM/12)*(16*U_interval(NX)-31*U_interval(NX-1)+16*U_interval(NX-2)-U_interval(NX-3))+U(NX-1)
-        do i=3,NX-2
-        UN(i)= U(i) + (VNM/12)*(16*U_interval(i+1)-U_interval(i+2)-30*U_interval(i)+16*U_interval(i-1)-U_interval(i-2))
-        end do
-        call Output(UN,X,NX,time1)
+        call BoundValue(UN,NX)
+        call Output(UN,X,NX,t)
         U = UN
-
-
     end do
 
+!-------------------------  Output results ------------------
 
-!---------------------------Output results
-
-      close(IO)
+!      OPEN(IO,FILE='Res.dat')
+!      call Output()
+      CLOSE(IO)
 
       End program
 
 !----------------------- Set Initial Value -----------------
-      SUBROUTINE InitValue(U, NX, in_val)
+      subroutine InitValue(X,U,NX,k)
       IMPLICIT NONE
       integer, intent(in):: NX
-      real,intent(in)::in_val
-       REAL,intent(in out):: U(NX)
-       U = in_val
+      real*8,intent(in)::k
+      integer i
+       REAL*8,intent(in out):: U(0:NX+1)
+       REAL*8,intent(in out):: X(0:NX+1)
+      U(0) = sin(k*X(0))
+      do I = 1, NX+1
+        U(I) = sin(k*X(I))
+      end do
 
-      END SUBROUTINE
+      end subroutine
 
 !----------------------- Set Boundary Condition ------------
-      SUBROUTINE BoundValue(a,b,C0,C1)
+      subroutine BoundValue(UN,NX)
       IMPLICIT NONE
-      real, intent(in)::C0,C1
-      real, intent(in out):: a, b
-      a = C1
-      b = C0
+      integer, intent(in):: NX
+      REAL*8,intent(in out):: UN(0:NX+1)
+      UN(0) = UN(NX-1)
+      UN(NX+1)=UN(2)
+      end subroutine
 
-      END SUBROUTINE
-
-!-----------------------
-      SUBROUTINE Output(U,X,NX,time)
+!----------------------- Output results ------------
+      subroutine Output(U,X,NX,t)
       IMPLICIT NONE
-      INTEGER, parameter:: IO=12
+     INTEGER, parameter:: IO=12
       integer,intent(in)::NX
-      real,intent(in out)::time
+      real*8,intent(in out)::t
       integer i
-      REAL,intent(in out):: U(NX)
-      REAL,intent(in out):: X(NX)
-      do i=1,NX
-        write(IO,*) U(i),X(i),time
+      REAL*8,intent(in out):: U(0:NX+1)
+      REAL*8,intent(in out):: X(0:NX+1)
+      write(IO,*)U(0),X(0),t
+      do i=1,NX+1
+        write(IO,*) U(i),X(i),t
       end do
 
 
-
-      END SUBROUTINE
-
-
+      end subroutine
